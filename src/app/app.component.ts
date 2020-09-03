@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ViewContainerRef } from '@angular/core';
+import { MapDistrictSelectorService } from 'projects/map-district-selector/src/public-api';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +8,13 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'map-district-selector-doc';
+
+  constructor(
+    private helper: MapDistrictSelectorService,
+    public viewContainerRef: ViewContainerRef
+  ) { }
+
+  open(): void {
+    this.helper.open(this.viewContainerRef);
+  }
 }

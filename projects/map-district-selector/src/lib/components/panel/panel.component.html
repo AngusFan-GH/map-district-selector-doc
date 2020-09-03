@@ -1,0 +1,11 @@
+<div class="top">
+  <div class="label">请选择省份</div>
+  <div class="search">
+    <input type="text">
+  </div>
+  <div class="back">&lt;</div>
+  <div class="close" (click)="close()">x</div>
+</div>
+<div class="main">
+  <div echarts [options]="mapOptions" class="map"></div>
+</div>
