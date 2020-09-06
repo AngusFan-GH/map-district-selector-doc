@@ -16,19 +16,25 @@
 
         align-items: center;
         justify-content: space-between;
-    }
-    .back,
-    .close {
-        position: absolute;
-        top: 50%;
+        .back,
+        .close {
+            position: absolute;
+            top: 50%;
 
-        cursor: pointer;
-        transform: translateY(-50%);
+            cursor: pointer;
+            transform: translateY(-50%);
+        }
+        .close {
+            right: 10px;
+        }
+        .back {
+            right: 50px;
+        }
     }
-    .close {
-        right: 10px;
-    }
-    .back {
-        right: 50px;
+    .main {
+        height: calc(100% - 58px);
+        .map {
+            height: 100%;
+        }
     }
 }

@@ -1,11 +1,11 @@
 <div class="top">
-  <div class="label">请选择省份</div>
+  <div class="label">{{options.title.subtext || '请选择省份'}}</div>
   <div class="search">
     <input type="text">
   </div>
-  <div class="back">&lt;</div>
+  <div class="back" (click)="back()" *ngIf="options.series[0].mapType !== 'China'">&lt;</div>
   <div class="close" (click)="close()">x</div>
 </div>
 <div class="main">
-  <div echarts [options]="mapOptions" class="map"></div>
+  <div #mapChart class="map"></div>
 </div>
