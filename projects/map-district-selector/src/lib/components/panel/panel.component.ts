@@ -1,9 +1,9 @@
-import { Component, OnInit, ViewChild, ElementRef, Inject } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, Inject, AfterViewInit, OnDestroy } from '@angular/core';
 // import { MapDistrictSelectorService } from '../../map-district-selector.service';
 import { ReadJsonService } from '../../utils/read-json/read-json.service';
 import { ECharts, EChartOption, EChartTitleOption } from 'echarts';
 import * as echarts from 'echarts';
-import { fromEvent } from 'rxjs';
+import { fromEvent, Subject, zip } from 'rxjs';
 import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from '../../map-district-selector.token';
 import { GeoDataType } from '../../map-district-selector.types';
 
@@ -12,14 +12,12 @@ import { GeoDataType } from '../../map-district-selector.types';
   templateUrl: './panel.component.html',
   styleUrls: ['./panel.component.scss']
 })
-export class PanelComponent implements OnInit {
+export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapChart') mapChart: ElementRef;
+  chartInit$ = new Subject<boolean>();
   chart: ECharts;
+  title = '';
   options: any = {
-    title: {
-      text: '全国34个省市自治区',
-      subtext: '中国'
-    },
     series: [
       {
         type: 'map',
@@ -53,52 +51,63 @@ export class PanelComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.ininMap();
+    this.chartInit$.subscribe(() => this.init());
+    zip(this.chartInit$, this.readJson.readJson('china')).subscribe(([_, ChinaJson]) => {
+      this.renderChina(ChinaJson);
+    });
   }
 
-  ininMap(): void {
-    this.readJson.readJson('china')
-      .subscribe(ChinaJson => {
-        echarts.registerMap('China', ChinaJson);
-        this.options.series[0].data = this.fmtGeoData(ChinaJson);
-        this.chart = echarts.init(this.mapChart.nativeElement);
-        this.chart.setOption(this.options);
-        this.bindMapSelectChangedEvent();
-      });
+  ngAfterViewInit(): void {
+    this.chartInit$.next(true);
   }
 
-  fmtGeoData(data): any {
+  private init(): void {
+    this.chart = echarts.init(this.mapChart.nativeElement);
+    this.bindMapSelectChangedEvent();
+  }
+
+
+  private renderChina(ChinaJson): void {
+    echarts.registerMap('China', ChinaJson);
+    (this.options.series[0] as EChartOption.SeriesMap).map = 'China';
+    this.options.series[0].data = this.fmtGeoData(ChinaJson);
+    this.chart.setOption(this.options);
+  }
+
+  private fmtGeoData(data): any {
     return data.features.map(g => g.properties);
   }
 
-  bindMapSelectChangedEvent(): void {
+  private bindMapSelectChangedEvent(): void {
     fromEvent(this.chart, 'mapselectchanged').subscribe((param: any) => {
-      console.log(param);
-
       const selectData = ((this.options.series[0] as EChartOption.SeriesMap
       ).data as EChartOption.SeriesMap.DataObject[]
       ).find((v) => v.name === param.batch[0].name) as GeoDataType;
       console.log(selectData);
-      if (!selectData?.adcode) {
-        return;
+      const { level, adcode, name } = selectData;
+      if (level === 'province') {
+        this.readJson.readJson(`${level}/${adcode}`).subscribe(e => {
+          console.log(e);
+          echarts.registerMap(name, e);
+          this.options.series[0].data = this.fmtGeoData(e);
+          this.title = name;
+          (this.options.series[0] as EChartOption.SeriesMap).map = name;
+          this.chart.setOption(this.options, true);
+        });
       }
-      this.readJson.readJson(`${selectData.level}/${selectData.adcode}`).subscribe(e => {
-        echarts.registerMap(selectData.name, e);
-        this.options.series[0].data = this.fmtGeoData(e);
-        (this.options.series[0] as EChartOption.SeriesMap).map = selectData.name;
-        (this.options.title as EChartTitleOption).subtext = selectData.name === 'China' ? '中国' : selectData.name;
-        this.chart.setOption(this.options, true);
-      });
     });
   }
 
   back(): void {
-    (this.options.series[0] as EChartOption.SeriesMap).map = 'China';
-    (this.options.title as EChartTitleOption).subtext = '中国';
-    this.ininMap();
+    this.title = '';
+    this.readJson.readJson('china').subscribe(ChinaJson => this.renderChina(ChinaJson));
   }
 
   close(): void {
     this.closeFn();
+  }
+
+  ngOnDestroy(): void {
+    this.chartInit$.complete();
   }
 }

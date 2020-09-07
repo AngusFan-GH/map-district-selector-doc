@@ -9,5 +9,6 @@ export type OverlayOptions = {
 export type GeoDataType = {
     adcode: number,
     level: string,
-    name: string
+    name: string,
+    childrenNum: number
 };
