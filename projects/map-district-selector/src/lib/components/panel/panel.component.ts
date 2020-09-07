@@ -6,6 +6,7 @@ import * as echarts from 'echarts';
 import { fromEvent, Subject, zip } from 'rxjs';
 import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from '../../map-district-selector.token';
 import { GeoDataType } from '../../map-district-selector.types';
+import { tap, map } from 'rxjs/operators';
 
 @Component({
   selector: 'mds-panel',
@@ -15,8 +16,11 @@ import { GeoDataType } from '../../map-district-selector.types';
 export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapChart') mapChart: ElementRef;
   chartInit$ = new Subject<boolean>();
+  loading = true;
   chart: ECharts;
   title = '';
+  mapLevel = 0;
+  cityList: any[] = [];
   options: any = {
     series: [
       {
@@ -51,8 +55,11 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.chartInit$.subscribe(() => this.init());
-    zip(this.chartInit$, this.readJson.readJson('china')).subscribe(([_, ChinaJson]) => {
+    zip(
+      this.chartInit$.pipe(tap(() => this.initChart())),
+      this.readJson.readJson('china')
+    ).subscribe(([_, ChinaJson]) => {
+      this.loading = false;
       this.renderChina(ChinaJson);
     });
   }
@@ -61,7 +68,7 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.chartInit$.next(true);
   }
 
-  private init(): void {
+  private initChart(): void {
     this.chart = echarts.init(this.mapChart.nativeElement);
     this.bindMapSelectChangedEvent();
   }
@@ -79,27 +86,64 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private bindMapSelectChangedEvent(): void {
-    fromEvent(this.chart, 'mapselectchanged').subscribe((param: any) => {
-      const selectData = ((this.options.series[0] as EChartOption.SeriesMap
-      ).data as EChartOption.SeriesMap.DataObject[]
-      ).find((v) => v.name === param.batch[0].name) as GeoDataType;
-      console.log(selectData);
-      const { level, adcode, name } = selectData;
-      if (level === 'province') {
-        this.readJson.readJson(`${level}/${adcode}`).subscribe(e => {
-          console.log(e);
-          echarts.registerMap(name, e);
-          this.options.series[0].data = this.fmtGeoData(e);
-          this.title = name;
-          (this.options.series[0] as EChartOption.SeriesMap).map = name;
-          this.chart.setOption(this.options, true);
-        });
-      }
+    fromEvent(this.chart, 'mapselectchanged')
+      .subscribe((param: any) => {
+        console.log(param);
+        console.log((this.options as EChartOption).series[0].data);
+
+        const selectData = ((this.options as EChartOption).series[0].data as EChartOption.SeriesMap.DataObject[])
+          .find((v) => v.name === param.batch[0].name) as GeoDataType;
+        console.log(selectData);
+        const { level, adcode, name } = selectData;
+        if (level === 'province') {
+          this.mapLevel = 1;
+          this.readJson.readJson(`${level}/${adcode}`).subscribe(e => {
+            console.log(e);
+            const cityList = e.features.map(({ properties }: any) => {
+              return {
+                name: properties.name,
+                observable: this.readJson.readJson(`${properties.level}/${properties.adcode}`)
+              };
+            });
+            zip(...cityList.map(({ observable }) => observable)).pipe(
+              map(cities => cities.map(({ features }, i) => {
+                return {
+                  parent: cityList[i].name,
+                  children: features.map(({ properties }) => properties)
+                };
+              }))
+            ).subscribe(list => {
+              this.cityList = list;
+            });
+            echarts.registerMap(name, e);
+            this.options.series[0].data = this.fmtGeoData(e);
+            this.title = name;
+            (this.options.series[0] as EChartOption.SeriesMap).map = name;
+            this.chart.setOption(this.options, true);
+          });
+        }
+      });
+  }
+
+  hoverCity(city): void {
+    console.log(city);
+    this.chart.dispatchAction({
+      type: 'mapSelect',
+      name: city.parent
     });
+  }
+
+  leaveDistrict(): void {
+    console.log('leave');
+  }
+
+  chooseDistrict(district): void {
+    console.log(district);
   }
 
   back(): void {
     this.title = '';
+    this.mapLevel = 0;
     this.readJson.readJson('china').subscribe(ChinaJson => this.renderChina(ChinaJson));
   }
 
