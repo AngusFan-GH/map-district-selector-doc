@@ -169,5 +169,8 @@
       }
     }
   },
-  "defaultProject": "map-district-selector-doc"
+  "defaultProject": "map-district-selector-doc",
+  "cli": {
+    "analytics": false
+  }
 }
