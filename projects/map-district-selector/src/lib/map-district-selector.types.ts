@@ -5,3 +5,9 @@ export type OverlayOptions = {
     hasBackdrop?: boolean,
     disableClose?: boolean
 };
+
+export type GeoDataType = {
+    adcode: number,
+    level: string,
+    name: string
+};

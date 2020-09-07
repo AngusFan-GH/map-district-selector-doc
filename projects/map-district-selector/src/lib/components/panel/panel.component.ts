@@ -1,10 +1,11 @@
 import { Component, OnInit, ViewChild, ElementRef, Inject } from '@angular/core';
 // import { MapDistrictSelectorService } from '../../map-district-selector.service';
 import { ReadJsonService } from '../../utils/read-json/read-json.service';
-import { ECharts } from 'echarts';
+import { ECharts, EChartOption, EChartTitleOption } from 'echarts';
 import * as echarts from 'echarts';
-import { zip, fromEvent } from 'rxjs';
+import { fromEvent } from 'rxjs';
 import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from '../../map-district-selector.token';
+import { GeoDataType } from '../../map-district-selector.types';
 
 @Component({
   selector: 'mds-panel',
@@ -28,7 +29,6 @@ export class PanelComponent implements OnInit {
         nameMap: {
           China: '中国'
         },
-        nameProperty: 'name',
         selectedMode: 'single',
         label: {
           show: true,
@@ -36,13 +36,15 @@ export class PanelComponent implements OnInit {
           position: 'inside'
         },
         itemStyle: {
-          areaColor: '#AAD5FF',
-          borderColor: 'white',
+          areaColor: {
+            color: '#AAD5FF',
+            borderColor: 'white',
+          },
           emphasis: {
             areaColor: '#A5DABB'
           }
-        },
-      }
+        }
+      },
     ]
   };
   constructor(
@@ -73,7 +75,9 @@ export class PanelComponent implements OnInit {
     fromEvent(this.chart, 'mapselectchanged').subscribe((param: any) => {
       console.log(param);
 
-      const selectData = this.options.series[0].data.find(v => v.name === param.batch[0].name);
+      const selectData = ((this.options.series[0] as EChartOption.SeriesMap
+      ).data as EChartOption.SeriesMap.DataObject[]
+      ).find((v) => v.name === param.batch[0].name) as GeoDataType;
       console.log(selectData);
       if (!selectData?.adcode) {
         return;
@@ -81,21 +85,20 @@ export class PanelComponent implements OnInit {
       this.readJson.readJson(`${selectData.level}/${selectData.adcode}`).subscribe(e => {
         echarts.registerMap(selectData.name, e);
         this.options.series[0].data = this.fmtGeoData(e);
-        this.options.series[0].map = selectData.name;
-        this.options.title.subtext = selectData.name === 'China' ? '中国' : selectData.name;
+        (this.options.series[0] as EChartOption.SeriesMap).map = selectData.name;
+        (this.options.title as EChartTitleOption).subtext = selectData.name === 'China' ? '中国' : selectData.name;
         this.chart.setOption(this.options, true);
       });
     });
   }
 
   back(): void {
-    this.options.series[0].map = 'China';
-    this.options.title.subtext = '中国';
+    (this.options.series[0] as EChartOption.SeriesMap).map = 'China';
+    (this.options.title as EChartTitleOption).subtext = '中国';
     this.ininMap();
   }
 
   close(): void {
     this.closeFn();
   }
-
 }

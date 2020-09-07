@@ -13,8 +13,4 @@ export class ReadJsonService {
   readJson(fileName): Observable<any> {
     return this.http.get(`assets/${fileName}.json`);
   }
-
-  getJsonFromApi(url): Observable<any> {
-    return this.http.get(url);
-  }
 }
