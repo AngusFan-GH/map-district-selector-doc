@@ -1,14 +1,16 @@
-import { Injectable, ViewContainerRef } from '@angular/core';
+import { Injectable, ViewContainerRef, Injector } from '@angular/core';
 import { Overlay, OverlayConfig, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { PanelComponent } from './components/panel/panel.component';
 import { OverlayOptions } from './map-district-selector.types';
+import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from './map-district-selector.token';
 
 @Injectable()
 export class MapDistrictSelectorService {
   private overlayRef: OverlayRef;
   constructor(
-    public overlay: Overlay
+    public overlay: Overlay,
+    private injector: Injector
   ) { }
 
   open(options: ViewContainerRef | OverlayOptions): void {
@@ -28,7 +30,17 @@ export class MapDistrictSelectorService {
         this.close();
       });
     }
-    this.overlayRef.attach(new ComponentPortal(PanelComponent, viewContainerRef));
+    this.overlayRef.attach(
+      new ComponentPortal(
+        PanelComponent, viewContainerRef, Injector.create({
+          providers: [{
+            provide: MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN,
+            useValue: this.close.bind(this)
+          }],
+          parent: this.injector
+        })
+      )
+    );
   }
 
   close(): void {

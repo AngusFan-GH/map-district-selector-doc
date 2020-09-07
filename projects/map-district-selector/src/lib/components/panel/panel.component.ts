@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { MapDistrictSelectorService } from '../../map-district-selector.service';
+import { Component, OnInit, ViewChild, ElementRef, Inject } from '@angular/core';
+// import { MapDistrictSelectorService } from '../../map-district-selector.service';
 import { ReadJsonService } from '../../utils/read-json/read-json.service';
 import { ECharts } from 'echarts';
 import * as echarts from 'echarts';
 import { zip, fromEvent } from 'rxjs';
+import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from '../../map-district-selector.token';
 
 @Component({
   selector: 'mds-panel',
@@ -21,14 +22,22 @@ export class PanelComponent implements OnInit {
     series: [
       {
         type: 'map',
-        mapType: 'China',
+        map: 'China',
+        roam: true,
+        zoom: 1.2,
+        nameMap: {
+          China: '中国'
+        },
+        nameProperty: 'name',
         selectedMode: 'single',
+        label: {
+          show: true,
+          color: 'white',
+          position: 'inside'
+        },
         itemStyle: {
-          normal: {
-            areaColor: '#AAD5FF',
-            borderColor: 'white',
-            label: { show: true, color: 'white' }
-          },
+          areaColor: '#AAD5FF',
+          borderColor: 'white',
           emphasis: {
             areaColor: '#A5DABB'
           }
@@ -37,43 +46,56 @@ export class PanelComponent implements OnInit {
     ]
   };
   constructor(
-    private helper: MapDistrictSelectorService,
+    @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) private closeFn: () => void,
     private readJson: ReadJsonService,
   ) { }
 
   ngOnInit(): void {
-    this.readJson.getJsonFromApi('https://geo.datav.aliyun.com/areas_v2/bound/100000_full.json')
-      .subscribe(ChinaJson => {
-        console.log(ChinaJson);
+    this.ininMap();
+  }
 
+  ininMap(): void {
+    this.readJson.readJson('china')
+      .subscribe(ChinaJson => {
         echarts.registerMap('China', ChinaJson);
-        this.options.series[0].data = ChinaJson;
+        this.options.series[0].data = this.fmtGeoData(ChinaJson);
         this.chart = echarts.init(this.mapChart.nativeElement);
         this.chart.setOption(this.options);
         this.bindMapSelectChangedEvent();
       });
   }
 
+  fmtGeoData(data): any {
+    return data.features.map(g => g.properties);
+  }
+
   bindMapSelectChangedEvent(): void {
     fromEvent(this.chart, 'mapselectchanged').subscribe((param: any) => {
-      const selectedName = param.batch[0].name;
-      this.readJson.readJson(selectedName).subscribe(e => {
-        echarts.registerMap(selectedName, e);
-        this.options.series[0].mapType = selectedName;
-        this.options.title.subtext = selectedName === 'China' ? '中国' : selectedName;
+      console.log(param);
+
+      const selectData = this.options.series[0].data.find(v => v.name === param.batch[0].name);
+      console.log(selectData);
+      if (!selectData?.adcode) {
+        return;
+      }
+      this.readJson.readJson(`${selectData.level}/${selectData.adcode}`).subscribe(e => {
+        echarts.registerMap(selectData.name, e);
+        this.options.series[0].data = this.fmtGeoData(e);
+        this.options.series[0].map = selectData.name;
+        this.options.title.subtext = selectData.name === 'China' ? '中国' : selectData.name;
         this.chart.setOption(this.options, true);
       });
     });
   }
 
   back(): void {
-    this.options.series[0].mapType = 'China';
+    this.options.series[0].map = 'China';
     this.options.title.subtext = '中国';
-    this.chart.setOption(this.options, true);
+    this.ininMap();
   }
 
   close(): void {
-    this.helper.close();
+    this.closeFn();
   }
 
 }
