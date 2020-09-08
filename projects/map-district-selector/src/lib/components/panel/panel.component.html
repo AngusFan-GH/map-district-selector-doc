@@ -7,10 +7,10 @@
   <div class="close" (click)="close()">x</div>
 </div>
 <div class="main">
-  <div #mapChart class="map"></div>
+  <div #mapChart class="map" [class.city]="mapLevel === 1"></div>
   <div class="district-list" *ngIf="mapLevel === 1 && cityList.length" (mouseleave)="leaveDistrict()">
     <div class="city-container" *ngFor="let city of cityList" (mouseenter)="hoverCity(city)">
-      <div class="title">{{city.parent}}</div>
+      <div class="title">{{city.name}}</div>
       <div class="subtitle-container">
         <div class="subtitle" *ngFor="let district of city.children" (click)="chooseDistrict(district)">
           {{district.name}}

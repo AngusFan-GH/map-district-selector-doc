@@ -1,6 +1,7 @@
 :host {
     min-width: 860px;
-    min-height: 640px;
+    max-width: 1366px;
+    height: 640px;
 
     border-radius: 4px;
     background-color: #fff;
@@ -76,6 +77,8 @@
                     flex-wrap: wrap;
                 }
                 .subtitle {
+                    font-size: 12px;
+                    height: 20px;
                     line-height: 20px;
 
                     margin-right: 10px;
@@ -84,6 +87,10 @@
                     white-space: nowrap;
 
                     color: #333;
+                    &:hover {
+                        color: #ffffff;
+                        background: #ff9900;
+                    }
                 }
             }
         }

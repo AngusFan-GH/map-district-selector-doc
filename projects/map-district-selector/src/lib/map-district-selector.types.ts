@@ -10,5 +10,6 @@ export type GeoDataType = {
     adcode: number,
     level: string,
     name: string,
-    childrenNum: number
+    childrenNum: number,
+    center: number[]
 };
