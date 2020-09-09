@@ -8,15 +8,30 @@
 </div>
 <div class="main">
   <div #mapChart class="map" [class.city]="mapLevel === 1"></div>
-  <div class="district-list" *ngIf="mapLevel === 1 && cityList.length" (mouseleave)="leaveDistrict()">
-    <div class="city-container" *ngFor="let city of cityList" (mouseenter)="hoverCity(city)">
-      <div class="title" (click)="chooseCity(city)">{{city.name}}</div>
-      <div class="subtitle-container">
-        <div class="subtitle" *ngFor="let district of city.children" (click)="chooseDistrict(district)">
-          {{district.name}}
+  <ng-container *ngIf="mapLevel === 1 && cityList.length">
+    <ng-container [ngSwitch]="cityType">
+      <div class="district-list" *ngSwitchCase="'Municipality'">
+        <div class="city-container municipality" *ngFor="let city of cityList">
+          <div class="title">{{city.name}}</div>
+          <div class="subtitle-container">
+            <div class="subtitle" *ngFor="let district of city.children" (mouseenter)="hoverDistrict(city, district)"
+              (mouseleave)="leaveDistrict(false)" (click)="chooseDistrict(district)">
+              {{district.name}}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+      <div class="district-list" *ngSwitchDefault (mouseleave)="leaveDistrict()">
+        <div class="city-container" *ngFor="let city of cityList" (mouseenter)="hoverCity(city)">
+          <div class="title" (click)="chooseCity(city)">{{city.name}}</div>
+          <div class="subtitle-container">
+            <div class="subtitle" *ngFor="let district of city.children" (click)="chooseDistrict(district)">
+              {{district.name}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
   <div class="loading" *ngIf="loading">Loading...</div>
 </div>

@@ -104,6 +104,16 @@
                 cursor: pointer;
 
                 border-bottom: 1px #ddd dashed;
+                &:not(.municipality) {
+                    display: flex;
+                    flex-direction: column;
+
+                    justify-content: center;
+                }
+                &.municipality {
+                    width: 430px;
+                    margin: auto 50px;
+                }
                 .title {
                     font-size: 16px;
                     font-weight: bold;
@@ -139,6 +149,9 @@
             }
         }
         .loading {
+            font-size: 32px;
+            font-weight: bold;
+
             position: absolute;
             top: 0;
             left: 0;

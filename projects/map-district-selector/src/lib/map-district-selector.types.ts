@@ -64,7 +64,7 @@ export class MapSelectResult {
     setCity(city): void {
         this.city = { ...city };
     }
-    setDistrice(district): void {
+    setDistrict(district): void {
         this.district = { ...district };
     }
 
@@ -85,5 +85,9 @@ export const MUNICIPALITIES = [
     110000, // 北京
     120000, // 天津
     500000, // 重庆
-    310000 // 上海
+    310000, // 上海
+    810000, // 香港
+    820000, // 澳门
 ];
+
+export const HAINAN = 460000;
