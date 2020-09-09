@@ -1,12 +1,11 @@
-import { Component, OnInit, ViewChild, ElementRef, Inject, AfterViewInit, OnDestroy } from '@angular/core';
-// import { MapDistrictSelectorService } from '../../map-district-selector.service';
+import { Component, OnInit, ViewChild, ElementRef, Inject, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
 import { ReadJsonService } from '../../utils/read-json/read-json.service';
-import { ECharts, EChartOption, EChartTitleOption } from 'echarts';
-import * as echarts from 'echarts';
 import { fromEvent, Subject, zip } from 'rxjs';
 import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from '../../map-district-selector.token';
-import { GeoDataType } from '../../map-district-selector.types';
+import { GeoDataType, MapTheme, MapSelectResult } from '../../map-district-selector.types';
 import { tap, map } from 'rxjs/operators';
+import { ECharts, EChartOption } from 'echarts';
+import * as echarts from 'echarts';
 
 @Component({
   selector: 'mds-panel',
@@ -28,48 +27,21 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
         map: 'China',
         roam: true,
         zoom: 1.2,
-        nameMap: {
-          China: '中国'
-        },
+        aspectScale: 0.75,
         selectedMode: 'single',
-        label: {
-          show: true,
-          color: 'white',
-          position: 'inside'
-        },
-        itemStyle: {
-          areaColor: {
-            color: '#AAD5FF',
-            borderColor: 'white',
-          },
-          emphasis: {
-            areaColor: '#A5DABB'
-          }
-        },
+        ...new MapTheme({
+          areaColor: '#e0ece4',
+          emphasisAreaColor: '#ff4b5c',
+          labelColor: '#66bfbf',
+          emphasisLabelColor: '#056674',
+        })
       },
     ]
   };
-  result: {
-    province: {
-      name?: string,
-      adcode?: number,
-      center?: number[]
-    },
-    city: {
-      name?: string,
-      adcode?: number,
-      center?: number[]
-    },
-    district: {
-      name?: string,
-      adcode?: number,
-      center?: number[]
-    }
-  } = {
-      province: {},
-      city: {},
-      district: {}
-    };
+  result = new MapSelectResult();
+  @HostListener('window:resize') resize(): void {
+    this.chart.resize();
+  }
   constructor(
     @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) private closeFn: () => void,
     private readJson: ReadJsonService,
@@ -95,17 +67,10 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
   private renderChina(ChinaJson): void {
-    this.chart.clear();
     this.chart.resize({
-      width: 860,
+      width: 860
     });
-    echarts.registerMap('China', ChinaJson);
-    (this.options.series[0] as EChartOption.SeriesMap).map = 'China';
-    console.log('ChinaJson', ChinaJson);
-
-    this.options.series[0].data = this.fmtGeoData(ChinaJson);
-    this.options.series[0].center = null;
-    this.chart.setOption(this.options);
+    this.resetMap('China', ChinaJson);
     this.loading = false;
   }
 
@@ -118,8 +83,6 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe((param: any) => {
         const selectData = ((this.options as EChartOption).series[0].data as EChartOption.SeriesMap.DataObject[])
           .find((v) => v.name === param.batch[0].name) as GeoDataType;
-        console.log(selectData);
-
         const { level, adcode, name, center, childrenNum } = selectData;
         if (!childrenNum) {
           this.result[level] = {
@@ -136,62 +99,79 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
           this.chart.resize({
             width: 430
           });
-          this.result.province.adcode = +adcode;
-          this.result.province.name = name;
-          this.result.province.center = center;
-          this.readJson.readJson(`${level}/${adcode}`).subscribe(e => {
-            const cityList = e.features.map(({ properties }: any) => {
-              return {
-                name: properties.name,
-                adcode: properties.adcode,
-                center: properties.center,
-                observable: this.readJson.readJson(`${properties.level}/${properties.adcode}`)
-              };
-            });
-            zip(...cityList.map(({ observable }) => observable)).pipe(
-              tap(c => console.log(c)),
-              map(cities => cities.map(({ features }, i) => {
-                return {
-                  name: cityList[i].name,
-                  adcode: cityList[i].adcode,
-                  center: cityList[i].center,
-                  children: features.map(({ properties }) => properties)
-                };
-              }))
-            ).subscribe(list => {
-              this.cityList = list;
-              this.loading = false;
-            });
-            this.chart.clear();
-            echarts.registerMap(name, e);
-            this.options.series[0].data = this.fmtGeoData(e);
-            this.options.series[0].center = center;
-            this.title = name;
-            (this.options.series[0] as EChartOption.SeriesMap).map = name;
-            this.chart.setOption(this.options, true);
+          this.result.setProvince({
+            adcode: +adcode,
+            name,
+            center
           });
+          this.renderCity(selectData);
         }
         if (level === 'city') {
-          this.result.city.adcode = adcode;
-          this.result.city.name = name;
+          this.result.setCity({
+            adcode,
+            name
+          });
           this.close();
         }
       });
   }
 
-  hoverCity(city): void {
+  private getDistrictList(e): void {
+    const cityList = e.features.map(({ properties }: any) => {
+      return {
+        name: properties.name,
+        adcode: properties.adcode,
+        center: properties.center,
+        observable: this.readJson.readJson(`${properties.level}/${properties.adcode}`)
+      };
+    });
+    zip(...cityList.map(({ observable }) => observable)).pipe(
+      map(cities => cities.map(({ features }, i) => {
+        return {
+          name: cityList[i].name,
+          adcode: cityList[i].adcode,
+          center: cityList[i].center,
+          children: features.map(({ properties }) => properties)
+        };
+      }))
+    ).subscribe(list => {
+      this.cityList = list;
+      this.loading = false;
+    });
+  }
+
+  private renderCity({ level, adcode, center, name }: GeoDataType): void {
+    this.readJson.readJson(`${level}/${adcode}`).subscribe(e => {
+      this.getDistrictList(e);
+      this.resetMap(name, e, center);
+      this.title = name;
+    });
+  }
+
+  private resetMap(name, data, center = null): void {
+    this.chart.clear();
+    echarts.registerMap(name, data);
+    (this.options.series[0] as EChartOption.SeriesMap).map = name;
+    this.options.series[0].data = this.fmtGeoData(data);
+    this.options.series[0].center = center;
+    this.chart.setOption(this.options, true);
+  }
+
+  hoverCity({ center, name, adcode }): void {
     this.chart.setOption({
       series: [{
         zoom: 2,
-        center: city.center
+        center
       }]
     });
     this.chart.dispatchAction({
       type: 'mapSelect',
-      name: city.name
+      name
     });
-    this.result.city.adcode = city.adcode;
-    this.result.city.name = city.name;
+    this.result.setCity({
+      adcode,
+      name
+    });
   }
 
   leaveDistrict(): void {
@@ -201,18 +181,23 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
         center: null
       }]
     });
+    if (this.result?.city?.name) {
+      this.chart.dispatchAction({
+        type: 'mapUnSelect',
+        name: this.result?.city?.name
+      });
+      this.result.clear('city');
+      this.result.clear('district');
+    }
+  }
 
-    this.chart.dispatchAction({
-      type: 'mapUnSelect',
-      name: this.result.city.name
-    });
-    this.result.city = {};
-    this.result.district = {};
+  chooseCity(city): void {
+    this.result.setCity(city);
+    this.close();
   }
 
   chooseDistrict(district): void {
-    this.result.district.adcode = district.adcode;
-    this.result.district.name = district.name;
+    this.result.setDistrice(district);
     this.close();
   }
 
@@ -224,7 +209,7 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   close(): void {
-    console.log(this.result);
+    console.log(this.result.getResult());
     this.closeFn();
   }
 

@@ -1,16 +1,16 @@
 <div class="top">
   <div class="label">{{title || '请选择省份'}}</div>
   <div class="search">
-    <input type="text">
+    <input type="text" placeholder="请输入您要查找的城市">
   </div>
-  <div class="back" (click)="back()" *ngIf="options.series[0].map !== 'China'">&lt;</div>
-  <div class="close" (click)="close()">x</div>
+  <button mat-flat-button class="back" (click)="back()" *ngIf="mapLevel !== 0">返回</button>
+  <div class="close" (click)="close()">×</div>
 </div>
 <div class="main">
   <div #mapChart class="map" [class.city]="mapLevel === 1"></div>
   <div class="district-list" *ngIf="mapLevel === 1 && cityList.length" (mouseleave)="leaveDistrict()">
     <div class="city-container" *ngFor="let city of cityList" (mouseenter)="hoverCity(city)">
-      <div class="title">{{city.name}}</div>
+      <div class="title" (click)="chooseCity(city)">{{city.name}}</div>
       <div class="subtitle-container">
         <div class="subtitle" *ngFor="let district of city.children" (click)="chooseDistrict(district)">
           {{district.name}}

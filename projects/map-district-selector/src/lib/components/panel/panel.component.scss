@@ -1,7 +1,7 @@
 :host {
     min-width: 860px;
     max-width: 1366px;
-    height: 640px;
+    height: 80vh;
 
     border-radius: 4px;
     background-color: #fff;
@@ -12,12 +12,38 @@
 
         box-sizing: border-box;
         height: 58px;
-        padding: 5px 100px 5px 30px;
+        padding: 5px 135px 5px 30px;
 
         border-bottom: solid 1px #9cd3e8;
 
         align-items: center;
         justify-content: space-between;
+        .label {
+            font-size: 26px;
+            line-height: 35px;
+
+            color: #666;
+        }
+        .search > input {
+            font-size: 14px;
+            line-height: 29px;
+
+            float: right;
+
+            box-sizing: content-box;
+            width: 224px;
+            height: 29px;
+            padding-top: 0;
+            padding-right: 50px;
+            padding-bottom: 0;
+            padding-left: 15px;
+
+            color: #b0b0b0;
+            border: 0;
+            border-radius: 50px;
+            outline: medium;
+            background: #eee;
+        }
         .back,
         .close {
             position: absolute;
@@ -27,7 +53,24 @@
             transform: translateY(-50%);
         }
         .close {
+            font-size: 25px;
+            line-height: 25px;
+
             right: 10px;
+
+            display: flex;
+
+            width: 25px;
+            height: 25px;
+
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 100%;
+            background: #000;
+            box-shadow: 0 0 1px 1px #000;
+
+            align-items: center;
+            justify-content: center;
         }
         .back {
             right: 50px;
@@ -46,12 +89,13 @@
         }
         .district-list {
             display: flex;
+            overflow: auto;
+
+            height: 100%;
 
             flex-wrap: wrap;
             .city-container {
                 position: relative;
-
-                display: flex;
 
                 width: 49%;
                 margin-left: 1%;
@@ -65,8 +109,8 @@
                     font-weight: bold;
                     line-height: 24px;
 
-                    width: 5em;
                     margin-right: 20px;
+                    margin-bottom: 10px;
 
                     color: #f60;
                 }
@@ -78,9 +122,9 @@
                 }
                 .subtitle {
                     font-size: 12px;
-                    height: 20px;
                     line-height: 20px;
 
+                    height: 20px;
                     margin-right: 10px;
 
                     cursor: pointer;
@@ -88,8 +132,8 @@
 
                     color: #333;
                     &:hover {
-                        color: #ffffff;
-                        background: #ff9900;
+                        color: #fff;
+                        background: #f90;
                     }
                 }
             }

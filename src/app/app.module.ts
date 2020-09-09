@@ -6,6 +6,7 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { MapDistrictSelectorModule } from 'projects/map-district-selector/src/public-api';
+import { GEO_JSON_API_PATH } from 'projects/map-district-selector/src/lib/map-district-selector.token';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,9 @@ import { MapDistrictSelectorModule } from 'projects/map-district-selector/src/pu
     BrowserAnimationsModule,
     MapDistrictSelectorModule
   ],
-  providers: [],
+  providers: [
+    { provide: GEO_JSON_API_PATH, useValue: 'assets' }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
