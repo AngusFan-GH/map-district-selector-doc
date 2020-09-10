@@ -55,19 +55,16 @@
 
             right: 10px;
 
-            display: flex;
-
             width: 25px;
             height: 25px;
+
+            text-align: center;
 
             color: #fff;
             border: 2px solid #fff;
             border-radius: 100%;
             background: #000;
             box-shadow: 0 0 1px 1px #000;
-
-            align-items: center;
-            justify-content: center;
         }
         .back {
             right: 50px;

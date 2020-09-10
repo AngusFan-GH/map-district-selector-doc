@@ -51,7 +51,6 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     // tslint:disable-next-line: ban-types
     @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) public closeFn: Function,
-    // private helper: MapDistrictSelectorService,
     private readJson: ReadJsonService,
     private $cdRef: ChangeDetectorRef
   ) { }
@@ -204,6 +203,7 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderCity({ level, adcode, center, name }: GeoDataType): void {
+    this.title = name;
     this.readJson.readJson(`${level}/${adcode}`).subscribe(e => {
       adcode = +adcode;
       if (this.isMunicipality(adcode)) {
@@ -212,7 +212,6 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
         this.getDistrictList(e);
       }
       this.resetMap(name, e);
-      this.title = name;
     });
   }
 
