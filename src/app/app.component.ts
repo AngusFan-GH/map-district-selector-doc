@@ -15,6 +15,8 @@ export class AppComponent {
   ) { }
 
   open(): void {
-    this.helper.open(this.viewContainerRef);
+    this.helper.open(this.viewContainerRef).then(e => {
+      console.log(e);
+    });
   }
 }

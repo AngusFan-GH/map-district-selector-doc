@@ -9,7 +9,7 @@
     </mat-autocomplete>
   </div>
   <button mat-flat-button color="primary" class="back" (click)="back()" *ngIf="mapLevel !== 0">返回</button>
-  <div class="close" (click)="close()">×</div>
+  <div class="close" (click)="close(false)">×</div>
 </div>
 <div class="main">
   <div #mapChart class="map" [class.city]="mapLevel === 1"></div>

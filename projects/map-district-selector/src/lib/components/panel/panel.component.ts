@@ -332,9 +332,8 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.readJson.readJson('china').subscribe(ChinaJson => this.renderChina(ChinaJson));
   }
 
-  close(): void {
-    console.log(this.result.getResult());
-    this.closeFn();
+  close(isOutputResult = true): void {
+    this.closeFn(isOutputResult ? this.result.getResult() : null);
   }
 
   ngOnDestroy(): void {

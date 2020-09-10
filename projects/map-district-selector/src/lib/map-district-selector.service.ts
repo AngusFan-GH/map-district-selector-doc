@@ -2,18 +2,20 @@ import { Injectable, ViewContainerRef, Injector } from '@angular/core';
 import { Overlay, OverlayConfig, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { PanelComponent } from './components/panel/panel.component';
-import { OverlayOptions } from './map-district-selector.types';
+import { OverlayOptions, MapSelectResultType } from './map-district-selector.types';
 import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from './map-district-selector.token';
+import { Observable, Subject } from 'rxjs';
 
 @Injectable()
 export class MapDistrictSelectorService {
+  afterClose$ = new Subject<MapSelectResultType>();
   private overlayRef: OverlayRef;
   constructor(
     public overlay: Overlay,
     private injector: Injector
   ) { }
 
-  open(options: ViewContainerRef | OverlayOptions): void {
+  open(options: ViewContainerRef | OverlayOptions): Promise<MapSelectResultType> {
     if (options instanceof ViewContainerRef) {
       options = { viewContainerRef: options };
     }
@@ -41,9 +43,15 @@ export class MapDistrictSelectorService {
         })
       )
     );
+    return new Promise(res => {
+      this.afterClose$.subscribe(e => res(e));
+    });
   }
 
-  close(): void {
+  close(result = null): void {
     this.overlayRef.dispose();
+    if (result != null) {
+      this.afterClose$.next(result);
+    }
   }
 }
