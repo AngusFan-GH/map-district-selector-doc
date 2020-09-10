@@ -7,7 +7,6 @@ import { tap, map, startWith } from 'rxjs/operators';
 import { ECharts, EChartOption } from 'echarts';
 import * as echarts from 'echarts';
 import { FormControl } from '@angular/forms';
-import { MapDistrictSelectorService } from '../../map-district-selector.service';
 
 @Component({
   selector: 'mds-panel',
@@ -50,8 +49,9 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.chart.resize();
   }
   constructor(
-    // @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) public closeFn: () => void,
-    private helper: MapDistrictSelectorService,
+    // tslint:disable-next-line: ban-types
+    @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) public closeFn: Function,
+    // private helper: MapDistrictSelectorService,
     private readJson: ReadJsonService,
     private $cdRef: ChangeDetectorRef
   ) { }
@@ -335,8 +335,7 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
 
   close(): void {
     console.log(this.result.getResult());
-    // this.closeFn();
-    this.helper.close();
+    this.closeFn();
   }
 
   ngOnDestroy(): void {
