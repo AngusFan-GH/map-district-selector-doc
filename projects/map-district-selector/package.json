@@ -1,6 +1,6 @@
 {
   "name": "map-district-selector",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "peerDependencies": {
     "@angular/cdk": "^10.1.0",
     "@angular/core": "~10.0.4",
