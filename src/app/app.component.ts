@@ -1,5 +1,5 @@
 import { Component, ViewChild, ViewContainerRef } from '@angular/core';
-import { MapDistrictSelectorService } from 'projects/map-district-selector/src/public-api';
+import { MapDistrictSelectorService, MapSelectResultType } from 'projects/map-district-selector/src/public-api';
 
 @Component({
   selector: 'app-root',
@@ -8,6 +8,7 @@ import { MapDistrictSelectorService } from 'projects/map-district-selector/src/p
 })
 export class AppComponent {
   title = 'map-district-selector-doc';
+  selectedData: MapSelectResultType;
 
   constructor(
     private helper: MapDistrictSelectorService,
@@ -16,6 +17,7 @@ export class AppComponent {
 
   open(): void {
     this.helper.open(this.viewContainerRef).then(e => {
+      this.selectedData = e;
       console.log(e);
     });
   }
