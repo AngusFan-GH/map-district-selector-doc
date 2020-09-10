@@ -1,11 +1,12 @@
-import { Component, OnInit, ViewChild, ElementRef, Inject, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, Inject, AfterViewInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { ReadJsonService } from '../../utils/read-json/read-json.service';
 import { fromEvent, Subject, zip, of } from 'rxjs';
 import { MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN } from '../../map-district-selector.token';
 import { GeoDataType, MapTheme, MapSelectResult, MUNICIPALITIES, HAINAN } from '../../map-district-selector.types';
-import { tap, map } from 'rxjs/operators';
+import { tap, map, startWith } from 'rxjs/operators';
 import { ECharts, EChartOption } from 'echarts';
 import * as echarts from 'echarts';
+import { FormControl } from '@angular/forms';
 
 @Component({
   selector: 'mds-panel',
@@ -14,6 +15,9 @@ import * as echarts from 'echarts';
 })
 export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapChart') mapChart: ElementRef;
+  searchControl = new FormControl();
+  searchOptions: any = [];
+  searchPlaceholder = ['请输入您要查找的省市', '请输入您要查找的地区'];
   chartInit$ = new Subject<boolean>();
   loading = true;
   chart: ECharts;
@@ -47,6 +51,7 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) private closeFn: () => void,
     private readJson: ReadJsonService,
+    private $cdRef: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -54,12 +59,48 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
       this.chartInit$.pipe(tap(() => this.initChart())),
       this.readJson.readJson('china')
     ).subscribe(([_, ChinaJson]) => {
+      this.loading = false;
       this.renderChina(ChinaJson);
+      this.initSearchOptions();
     });
   }
 
   ngAfterViewInit(): void {
     this.chartInit$.next(true);
+    this.$cdRef.detectChanges();
+  }
+
+  private initSearchOptions(): void {
+    this.searchControl.valueChanges.pipe(
+      startWith(''),
+      map(value => this.filterSearch(value))
+    ).subscribe(e => this.searchOptions = e);
+  }
+
+  private filterSearch(value: string): any {
+    const filterValue = value.trim().toLowerCase();
+    if (!filterValue) {
+      return [];
+    }
+    let options = [];
+    switch (this.mapLevel) {
+      case 0:
+        options = this.options.series[0].data;
+        break;
+      case 1:
+        options = JSON.parse(JSON.stringify(this.cityList)).reduce((p, c) => {
+          p.push(c);
+          if (c.children.length) {
+            p.push(...c.children.map(child => {
+              child.name = `${c.name}-${child.name}`;
+              return child;
+            }));
+          }
+          return p;
+        }, []);
+        break;
+    }
+    return options.filter(option => option.name && option.name.toLowerCase().includes(filterValue));
   }
 
   private initChart(): void {
@@ -91,48 +132,76 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   private bindMapSelectChangedEvent(): void {
     fromEvent(this.chart, 'mapselectchanged')
       .subscribe((param: any) => {
-        const selectData = ((this.options as EChartOption).series[0].data as EChartOption.SeriesMap.DataObject[])
-          .find((v) => v.name === param.batch[0].name) as GeoDataType;
-        const { level, adcode, name, center, childrenNum } = selectData;
-        if (level === 'province') {
-          this.result.setProvince({
-            adcode: +adcode,
-            name,
-            center
-          });
-          if (!childrenNum) {
-            this.close();
-            return;
-          }
-          if (this.isMunicipality(adcode)) {
-            this.result.setCity({
-              adcode: +adcode,
-              name,
-              center
-            });
-          }
-          this.loading = true;
-          this.mapLevel = 1;
-          this.chart.resize({
-            width: 430
-          });
-          this.renderCity(selectData);
-        }
-        if (level === 'city') {
-          this.result.setCity({
-            adcode: +adcode,
-            name
-          });
-          this.close();
-        }
-        if (level === 'district') {
-          this.result.setDistrict({
-            adcode: +adcode,
-            name
-          });
-          this.close();
-        }
+        this.mapSelectChangedEventCallBack(param.batch[0].name);
       });
+  }
+
+  mapSelectChangedEventCallBack(selectedName: string): void {
+    if (this.mapLevel === 1) {
+      const [cityName, districtName] = selectedName.split('-');
+      console.log(this.cityList);
+      const city = this.cityList.find(c => c.name === cityName);
+      this.result.setCity({
+        adcode: +city.adcode,
+        name: city.name,
+      });
+      if (districtName) {
+        const district = city.children.find(d => d.name === districtName);
+        this.result.setDistrict({
+          adcode: +district.adcode,
+          name: district.name
+        });
+      }
+      this.close();
+      return;
+    }
+    this.searchControl.setValue('');
+    const selectData = ((this.options as EChartOption).series[0].data as EChartOption.SeriesMap.DataObject[])
+      .find((v) => v.name === selectedName) as GeoDataType;
+    console.log((this.options as EChartOption).series[0].data);
+    console.log(selectData);
+    if (!selectData) {
+      return;
+    }
+    const { level, adcode, name, center, childrenNum } = selectData;
+    if (level === 'province') {
+      this.result.setProvince({
+        adcode: +adcode,
+        name,
+        center
+      });
+      if (!childrenNum) {
+        this.close();
+        return;
+      }
+      if (this.isMunicipality(adcode)) {
+        this.result.setCity({
+          adcode: +adcode,
+          name,
+          center
+        });
+      }
+      this.loading = true;
+      this.mapLevel = 1;
+      this.chart.resize({
+        width: 430
+      });
+      this.renderCity(selectData);
+    }
+    if (level === 'city') {
+      this.result.setCity({
+        adcode: +adcode,
+        name
+      });
+      this.close();
+    }
+    if (level === 'district') {
+      this.result.setDistrict({
+        adcode: +adcode,
+        name
+      });
+      this.close();
+    }
   }
 
   private renderCity({ level, adcode, center, name }: GeoDataType): void {
@@ -191,6 +260,10 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.options.series[0].data = this.fmtGeoData(data);
     this.options.series[0].center = center;
     this.chart.setOption(this.options, true);
+  }
+
+  clickSearchValue(option): void {
+    console.log(option);
   }
 
   hoverDistrict(city, district): void {

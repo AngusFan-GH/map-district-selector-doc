@@ -19,7 +19,7 @@ import { GEO_JSON_API_PATH } from 'projects/map-district-selector/src/lib/map-di
     MapDistrictSelectorModule
   ],
   providers: [
-    { provide: GEO_JSON_API_PATH, useValue: 'assets' }
+    { provide: GEO_JSON_API_PATH, useValue: 'http://localhost:8080/assets' }
   ],
   bootstrap: [AppComponent]
 })
