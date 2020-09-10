@@ -7,6 +7,7 @@ import { tap, map, startWith } from 'rxjs/operators';
 import { ECharts, EChartOption } from 'echarts';
 import * as echarts from 'echarts';
 import { FormControl } from '@angular/forms';
+import { MapDistrictSelectorService } from '../../map-district-selector.service';
 
 @Component({
   selector: 'mds-panel',
@@ -49,7 +50,8 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.chart.resize();
   }
   constructor(
-    @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) private closeFn: () => void,
+    // @Inject(MAP_DISTRICT_SELECTOR_CLOSE_FUNC_TOKEN) public closeFn: () => void,
+    private helper: MapDistrictSelectorService,
     private readJson: ReadJsonService,
     private $cdRef: ChangeDetectorRef
   ) { }
@@ -139,7 +141,6 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
   mapSelectChangedEventCallBack(selectedName: string): void {
     if (this.mapLevel === 1) {
       const [cityName, districtName] = selectedName.split('-');
-      console.log(this.cityList);
       const city = this.cityList.find(c => c.name === cityName);
       this.result.setCity({
         adcode: +city.adcode,
@@ -158,8 +159,6 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.searchControl.setValue('');
     const selectData = ((this.options as EChartOption).series[0].data as EChartOption.SeriesMap.DataObject[])
       .find((v) => v.name === selectedName) as GeoDataType;
-    console.log((this.options as EChartOption).series[0].data);
-    console.log(selectData);
     if (!selectData) {
       return;
     }
@@ -262,10 +261,6 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.chart.setOption(this.options, true);
   }
 
-  clickSearchValue(option): void {
-    console.log(option);
-  }
-
   hoverDistrict(city, district): void {
     this.chart.setOption({
       series: [{
@@ -340,7 +335,8 @@ export class PanelComponent implements OnInit, AfterViewInit, OnDestroy {
 
   close(): void {
     console.log(this.result.getResult());
-    this.closeFn();
+    // this.closeFn();
+    this.helper.close();
   }
 
   ngOnDestroy(): void {
