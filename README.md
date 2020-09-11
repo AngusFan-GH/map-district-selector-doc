@@ -37,7 +37,7 @@ import { MapDistrictSelectorModule, GEO_JSON_API_PATH } from 'map-district-selec
   providers: [
     { 
       provide: GEO_JSON_API_PATH, 
-      useValue: 'http://localhost:8080/assets' 
+      useValue: 'http://localhost:8080/assets' // Geo_json资源存放位置，不要改文件及文件夹名
     }
   ]
 })
@@ -81,3 +81,8 @@ demo.component.html
 <div>区：{{selectedData?.district?.name}} -- {{selectedData?.district?.adcode}}</div>
 ```
 
+## Online demo address
+
+https://angusfan-gh.github.io/map-district-selector-doc/
+
+在线地址资源加载较慢，可下载项目进行查看。
